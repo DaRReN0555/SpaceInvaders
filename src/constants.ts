@@ -3,7 +3,7 @@ export const player = {
     score: 0,
     direction: 0,
     level: 0,
-    lives: 0,
+    lives: 3,
 };
 
 export class Enemy {

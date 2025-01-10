@@ -1,13 +1,19 @@
 import { Application, Assets, Sprite, Text, TextStyle } from 'pixi.js'
-import playerUrl from './sprites/player.png'
-import enemyUrl from './sprites/enemy.png'
+import { player, levels, enemies} from './constants';
+import playerUrl from './sprites/playerSprite.png'
+import enemy11Url from './sprites/enemySprite1-1.png'
+import enemy12Url from './sprites/enemySprite1-2.png'
+import enemy21Url from './sprites/enemySprite2-1.png'
+import enemy22Url from './sprites/enemySprite2-2.png'
+import enemy31Url from './sprites/enemySprite3-1.png'
+import enemy32Url from './sprites/enemySprite3-2.png'
 import playerBulletUrl from './sprites/playerBullet.png'
 import enemyBulletUrl from './sprites/enemyBullet.png'
-import { player, levels, enemies} from './constants';
-import playerHitUrl from './sprites/playerHit.png';
-import wallUrl from './sprites/wall.png';
+import playerHitUrl from './sprites/playerBoom.png';
+import wallSprite11Url from './sprites/wallSprite1-1.png'
 
-let enemyAssets = [enemyUrl]
+
+let enemyAssets = [enemy11Url, enemy21Url, enemy31Url];
 function randomEnemy() {
     return Math.floor(Math.random() * enemyAssets.length)
 } 
@@ -26,9 +32,14 @@ const textStyle = new TextStyle({
 });
 
 const livesText = new Text(`Lives: ${player.lives}`, textStyle);
-livesText.x = app.screen.width - 150;
+livesText.x = app.screen.width - 90;
 livesText.y = 10;
 app.stage.addChild(livesText);
+
+const scoreText = new Text(`Score: ${player.score}`, textStyle);
+scoreText.x = 10;
+scoreText.y = 10;
+app.stage.addChild(scoreText);
 
 function updateLivesDisplay() {
     livesText.text = `Lives: ${player.lives}`;
@@ -43,41 +54,6 @@ window.addEventListener('keypress', keyTrue)
 window.addEventListener('keypress', keyFalse)
 window.addEventListener('keypress', keySpace)
 
-async function createWalls() {
-    const wallTexture = await Assets.load(wallUrl);
-    const wallWidth = 50;
-    const wallHeight = 20;
-    const wallSpacing = 100;
-    const wallRows = 3;
-    const wallColumns = 5;
-    const startX = (app.screen.width - (wallColumns * wallWidth + (wallColumns - 1) * wallSpacing)) / 2;
-    const startY = app.screen.height - 200;
-
-    for (let row = 0; row < wallRows; row++) {
-        for (let col = 0; col < wallColumns; col++) {
-            const wall = new Sprite(wallTexture);
-            wall.x = startX + col * (wallWidth + wallSpacing);
-            wall.y = startY + row * (wallHeight + 10);
-            wall.width = wallWidth;
-            wall.height = wallHeight;
-            app.stage.addChild(wall);
-            walls.push(wall);
-        }
-    }
-}
-
-createWalls();
-
-function checkWallCollision(bullet: Sprite) {
-    for (let i = walls.length - 1; i >= 0; i--) {
-        if (checkCollision(bullet, walls[i])) {
-            app.stage.removeChild(walls[i]);
-            walls.splice(i, 1);
-            return true;
-        }
-    }
-    return false;
-}
 
 
 function checkBorders(from: number, dir: number): boolean {
@@ -91,7 +67,6 @@ function checkBorders(from: number, dir: number): boolean {
     }
     return true
 }
-
 
 
 function keyFalse(e: KeyboardEvent) {
@@ -133,11 +108,6 @@ async function shoot() {
 
     const bulletInterval = setInterval(() => {
         bullet.y -= 5;
-        if (checkWallCollision(bullet)) {
-            app.stage.removeChild(bullet);
-            clearInterval(bulletInterval);
-            return;
-        }
         for (let enemy of enemies) {
             if (checkCollision(bullet, enemy)) {
                 handleBulletCollision(bullet, enemy);
@@ -155,12 +125,12 @@ async function shoot() {
 
 
 async function DrawEnemy() {
-    const enemiesPerLine = 6;
-    const enemySpacing = 100;
+    const enemiesPerLine = 11;
+    const enemySpacing = 60;
     const totalEnemyWidth = (enemiesPerLine - 1) * enemySpacing;
     let posX = (app.screen.width - totalEnemyWidth) / 2;
     let posY = 100;
-    for (let i = 0; i < levels[player.level].enemies; i++) {
+    for (let i = 0; i < 55; i++) {
         let enemyTexture = await Assets.load(enemyAssets[randomEnemy()]);
         let enemySprite = new Sprite(enemyTexture);
         enemySprite.anchor.set(0.5);
@@ -171,15 +141,43 @@ async function DrawEnemy() {
         posX += enemySpacing;
         if ((i + 1) % enemiesPerLine === 0) {
             posX = (app.screen.width - totalEnemyWidth) / 2;
-            posY += 100;
+            posY += 50;
         }
     }
 }
 DrawEnemy()
 
 let enemyDirection = 1;
-const enemySpeed = 0.2;
+const enemySpeed = 0.1;
 const enemyDrop = 20;
+let enemy11Sprite = new Sprite(await Assets.load(enemy11Url));
+let enemy12Sprite = new Sprite(await Assets.load(enemy11Url));
+let enemy21Sprite = new Sprite(await Assets.load(enemy21Url));
+let enemy22Sprite = new Sprite(await Assets.load(enemy22Url));
+let enemy31Sprite = new Sprite(await Assets.load(enemy31Url));
+let enemy32Sprite = new Sprite(await Assets.load(enemy32Url));
+
+
+
+function changeEnemySprites(enemy: Sprite) {
+    if (enemy == enemy11Sprite) {
+        enemy = enemy12Sprite;
+    } else if (enemy == enemy12Sprite) {
+        enemy = enemy11Sprite;
+    } else if (enemy == enemy21Sprite) {
+        enemy = enemy22Sprite;
+    } else if (enemy == enemy22Sprite) {
+        enemy = enemy21Sprite;
+    } else if (enemy == enemy31Sprite) {
+        enemy = enemy32Sprite;
+    } else if (enemy == enemy32Sprite) {
+        enemy = enemy31Sprite;
+    }
+}
+
+for (let enemy of enemies) {
+    changeEnemySprites(enemy);
+}
 
 function moveEnemies() {
     if (!isGameActive) return;
@@ -215,11 +213,6 @@ function enemyShoot(enemy: Sprite) {
 
     const bulletInterval = setInterval(() => {
         bullet.y += 5;
-        if (checkWallCollision(bullet)) {
-            app.stage.removeChild(bullet);
-            clearInterval(bulletInterval);
-            return;
-        }
         if (checkCollision(bullet, playerTexture)) {
             handleBulletCollision(bullet, playerTexture);
             clearInterval(bulletInterval);
@@ -315,8 +308,6 @@ function restartGame() {
     app.stage.addChild(playerTexture);
     app.stage.addChild(livesText);
     startNewLevel();
-    walls = [] 
-    createWalls();
 }
 
 function displayEndScreen(message: string) {
