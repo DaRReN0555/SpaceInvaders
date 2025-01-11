@@ -207,7 +207,7 @@ function moveEnemies() {
     }
     if (shouldChangeDirection) {
         enemyDirection *= -1;
-        enemySpeed += (100 / 81000) ^ 3 + player.level * 3;
+        enemySpeed += (10 / 81000) ^ 3 + player.level * 3;
         for (let enemy of enemies) {
             enemy.y += enemyDrop;
         }
@@ -220,7 +220,77 @@ function moveEnemies() {
     }
  }, 500);
 
+ function drawWalls() {
+    let spaceBetweenWalls = 50;
+    let wallSpace = 130
+    for (let i = 0; i < 2; i++) {
+        let wallSprite = new Sprite(wall1);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 130;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 46
+        
+    }
+    wallSpace += 200
+    spaceBetweenWalls = 50
+    for (let i = 0; i < 2; i++) {
+        let wallSprite = new Sprite(wall1);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 130;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 46
+    }
+    wallSpace += 200
+    spaceBetweenWalls = 50
+    for (let i = 0; i < 2; i++) {
+        let wallSprite = new Sprite(wall1);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 130;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 46
+    }
+    spaceBetweenWalls = 50
+    wallSpace = 130
+    for (let i = 0; i < 3; i++) {
+        let wallSprite = new Sprite(wall2);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 151;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 200
+    }
+    spaceBetweenWalls = 50
+    wallSpace = 176
+    for (let i = 0; i < 3; i++) {
+        let wallSprite = new Sprite(wall4);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 151;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 200
+    }
+    spaceBetweenWalls = 50
+    wallSpace = 153
+    for (let i = 0; i < 3; i++) {
+        let wallSprite = new Sprite(wall3);
+        wallSprite.anchor.set(0.5);
+        wallSprite.x = spaceBetweenWalls + wallSpace;
+        wallSprite.y = app.screen.height - 151;
+        app.stage.addChild(wallSprite);
+        walls.push(wallSprite);
+        spaceBetweenWalls += 200
+    }
+}
 
+drawWalls()
 
 async function changeEnemyTexture(enemy: Sprite) {
     if (enemy.texture == enemy11) {
@@ -342,6 +412,11 @@ async function blinkPlayer() {
 
 async function startNewLevel() {
     player.level += 1;
+    if(player.lives < 3) {
+        player.lives += 1
+        updateLivesDisplay();
+    }
+    
     await DrawEnemy();
 }
 
@@ -351,6 +426,7 @@ function restartGame() {
     player.score = 0;
     enemySpeed = 5
     updateLivesDisplay();
+    
     playerTexture.x = app.screen.width / 2;
     playerTexture.y = app.screen.height - 50;
     for (let enemy of enemies) {
@@ -393,6 +469,7 @@ function displayEndScreen(message: string) {
     restartText.interactive = true;
     restartText.on('pointerdown', () => {
         restartGame();
+        drawWalls()
         isGameActive = true;
     });
     app.stage.addChild(restartText);
