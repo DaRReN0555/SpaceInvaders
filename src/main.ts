@@ -10,12 +10,50 @@ import enemy32Url from './sprites/enemySprite3-2.png'
 import playerBulletUrl from './sprites/playerBullet.png'
 import enemyBulletUrl from './sprites/enemyBullet.png'
 import playerHitUrl from './sprites/playerBoom.png';
-import wallSprite11Url from './sprites/wallSprite1-1.png'
 import alienSpriteUrl from './sprites/alienSprite.png'
 import alienBoomUrl from './sprites/alienBoom.png'
+import wall1Url from './sprites/wallSprite1.png'
+import wall12Url from './sprites/wallSprite1-2.png'
+import wall13Url from './sprites/wallSprite1-3.png'
+import wall14Url from './sprites/wallSprite1-4.png'
+import wall2Url from './sprites/wallSprite2.png'
+import wall22Url from './sprites/wallSprite2-2.png'
+import wall23Url from './sprites/wallSprite2-3.png'
+import wall24Url from './sprites/wallSprite2-4.png'
+import wall3Url from './sprites/wallSprite3.png'
+import wall32Url from './sprites/wallSprite3-2.png'
+import wall33Url from './sprites/wallSprite3-3.png'
+import wall34Url from './sprites/wallSprite3-4.png'
+import wall4Url from './sprites/wallSprite4.png'
+import wall42Url from './sprites/wallSprite4-2.png'
+import wall43Url from './sprites/wallSprite4-3.png'
+import wall44Url from './sprites/wallSprite4-4.png'
 
+let enemy11 = await Assets.load(enemy11Url)
+let enemy12 = await Assets.load(enemy12Url)
+let enemy21 = await Assets.load(enemy21Url)
+let enemy22 = await Assets.load(enemy22Url)
+let enemy31 = await Assets.load(enemy31Url)
+let enemy32 = await Assets.load(enemy32Url)
 
-let enemyAssets = [enemy11Url, enemy21Url, enemy31Url];
+let wall1 = await Assets.load(wall1Url)
+let wall12 = await Assets.load(wall12Url)
+let wall13 = await Assets.load(wall13Url)
+let wall14 = await Assets.load(wall14Url)
+let wall2 = await Assets.load(wall2Url)
+let wall22 = await Assets.load(wall22Url)
+let wall23 = await Assets.load(wall23Url)
+let wall24 = await Assets.load(wall24Url)
+let wall3 = await Assets.load(wall3Url)
+let wall32 = await Assets.load(wall32Url)
+let wall33 = await Assets.load(wall33Url)
+let wall34 = await Assets.load(wall34Url)
+let wall4 = await Assets.load(wall4Url)
+let wall42 = await Assets.load(wall42Url)
+let wall43 = await Assets.load(wall43Url)
+let wall44 = await Assets.load(wall44Url)
+
+let enemyAssets = [enemy11, enemy21, enemy31];
 function randomEnemy() {
     return Math.floor(Math.random() * enemyAssets.length)
 } 
@@ -42,6 +80,10 @@ const scoreText = new Text(`Score: ${player.score}`, textStyle);
 scoreText.x = 10;
 scoreText.y = 10;
 app.stage.addChild(scoreText);
+
+app.ticker.add(() => {
+    scoreText.text = `Score: ${player.score}`;
+});
 
 function updateLivesDisplay() {
     livesText.text = `Lives: ${player.lives}`;
@@ -134,7 +176,7 @@ async function DrawEnemy() {
     let posX = (app.screen.width - totalEnemyWidth) / 2;
     let posY = 100;
     for (let i = 0; i < 55; i++) {
-        let enemyTexture = await Assets.load(enemyAssets[randomEnemy()]);
+        let enemyTexture = enemyAssets[randomEnemy()];
         let enemySprite = new Sprite(enemyTexture);
         enemySprite.anchor.set(0.5);
         enemySprite.x = posX;
@@ -151,7 +193,7 @@ async function DrawEnemy() {
 DrawEnemy()
 
 let enemyDirection = 1;
-const enemySpeed = 0.1;
+let enemySpeed = 5;
 const enemyDrop = 20;
 
 function moveEnemies() {
@@ -165,17 +207,50 @@ function moveEnemies() {
     }
     if (shouldChangeDirection) {
         enemyDirection *= -1;
+        enemySpeed += (100 / 81000) ^ 3 + player.level * 3;
         for (let enemy of enemies) {
             enemy.y += enemyDrop;
         }
     }
+    
 }
-app.ticker.add(() => {
+ setInterval(() => {
     if (isGameActive) {
         moveEnemies();
     }
-});
+ }, 500);
 
+
+
+async function changeEnemyTexture(enemy: Sprite) {
+    if (enemy.texture == enemy11) {
+        enemy.texture = enemy12
+    }
+    else if (enemy.texture == enemy12) {
+        enemy.texture = enemy11
+    }
+    if (enemy.texture == enemy21) {
+        enemy.texture = enemy22
+    }
+    else if (enemy.texture == enemy22) {
+        enemy.texture = enemy21
+    }
+    if (enemy.texture == enemy31) {
+        enemy.texture = enemy32
+    }
+    else if (enemy.texture == enemy32) {
+        enemy.texture = enemy31
+    }
+
+
+}
+setInterval(() => {
+    if (isGameActive) {
+        for (let enemy of enemies) {
+            changeEnemyTexture(enemy);
+        }
+    }
+}, 500);
 
 const enemyBulletTexture = await Assets.load(enemyBulletUrl);
 
@@ -230,6 +305,7 @@ function handleBulletCollision(bullet: Sprite, entity: Sprite) {
     const entityIndex = enemies.indexOf(entity);
     if (entityIndex > -1) {
         enemies.splice(entityIndex, 1);
+        player.score += 10
     }
     if (entity === playerTexture) {
         blinkPlayer();
@@ -272,6 +348,8 @@ async function startNewLevel() {
 function restartGame() {
     player.lives = 3;
     player.level = -1;
+    player.score = 0;
+    enemySpeed = 5
     updateLivesDisplay();
     playerTexture.x = app.screen.width / 2;
     playerTexture.y = app.screen.height - 50;
@@ -282,6 +360,7 @@ function restartGame() {
     app.stage.removeChildren();
     app.stage.addChild(playerTexture);
     app.stage.addChild(livesText);
+    app.stage.addChild(scoreText);
     startNewLevel();
 }
 
@@ -358,7 +437,6 @@ function handleUFOCollision(bullet: Sprite) {
                 ufo = null;
             }, 200);
         });
-        app.stage.removeChild(bullet);
     }
 }
 setInterval(() => {
@@ -368,7 +446,7 @@ setInterval(() => {
 }, 10000);
 app.ticker.add(() => {
     if (isGameActive) {
-        moveEnemies();
         moveUFO();
     }
 });
+
