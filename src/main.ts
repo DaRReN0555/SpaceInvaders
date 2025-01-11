@@ -53,6 +53,9 @@ let wall42 = await Assets.load(wall42Url)
 let wall43 = await Assets.load(wall43Url)
 let wall44 = await Assets.load(wall44Url)
 
+
+
+
 let enemyAssets = [enemy11, enemy21, enemy31];
 function randomEnemy() {
     return Math.floor(Math.random() * enemyAssets.length)
@@ -60,7 +63,7 @@ function randomEnemy() {
 
 const keys: { [key: string]: boolean } = {};
 
-let walls: Sprite[] = [];
+let walls: { sprite: Sprite; hits: number }[] = [];
 
 const app = new Application()
 await app.init({ background: 'black', width: 810, height: 800 });
@@ -70,6 +73,8 @@ const textStyle = new TextStyle({
     fontSize: 24,
     fill: 'white',
 });
+
+
 
 const livesText = new Text(`Lives: ${player.lives}`, textStyle);
 livesText.x = app.screen.width - 90;
@@ -97,8 +102,6 @@ playerTexture.y = app.screen.height - 50;
 window.addEventListener('keypress', keyTrue)
 window.addEventListener('keypress', keyFalse)
 window.addEventListener('keypress', keySpace)
-
-
 
 function checkBorders(from: number, dir: number): boolean {
     if (from + dir < 0) {
@@ -139,41 +142,94 @@ function keySpace(e: KeyboardEvent) {
     keys[e.code] = false;
     if (e.code == 'Space') {
         shoot();
+
     }
 }
 
-async function shoot() {
-    let texture = await Assets.load(playerBulletUrl);
-    let bullet = new Sprite(texture);
-    bullet.anchor.set(0.5);
-    bullet.x = playerTexture.x;
-    bullet.y = playerTexture.y - 25;
-    app.stage.addChild(bullet);
 
-    const bulletInterval = setInterval(() => {
-        bullet.y -= 5;
-        for (let wall of walls) {
-            if (checkCollision(bullet, wall)) {
+let canShoot = true
+async function shoot() {
+    if(canShoot) {  
+        playShootSound(shootSoundUrl)
+        let texture = await Assets.load(playerBulletUrl);
+        let bullet = new Sprite(texture);
+        bullet.anchor.set(0.5);
+        bullet.x = playerTexture.x;
+        bullet.y = playerTexture.y - 25;
+        app.stage.addChild(bullet);
+        canShoot = false;
+
+        const bulletInterval = setInterval(() => {
+            bullet.y -= 5;
+            for (let wall of walls) {
+                if (checkCollision(bullet, wall.sprite)) {
+                    wall.hits++;
+                    if (wall.hits >= 3) {
+                        app.stage.removeChild(wall.sprite);
+                        walls = walls.filter(w => w !== wall);
+                    }
+                    changeWallsTexture(wall.sprite);
+                    app.stage.removeChild(bullet);
+                    clearInterval(bulletInterval);
+                    canShoot = true;   
+                    return;
+                }
+            }
+            for (let enemy of enemies) {
+                if (checkCollision(bullet, enemy)) {
+                    handleBulletCollision(bullet, enemy);
+                    clearInterval(bulletInterval);
+                    canShoot = true;
+                    return;
+                }
+            }
+            handleUFOCollision(bullet);
+            if (bullet.y < 0) {
                 app.stage.removeChild(bullet);
                 clearInterval(bulletInterval);
-                return;
+                canShoot = true;
             }
-        }
-        for (let enemy of enemies) {
-            if (checkCollision(bullet, enemy)) {
-                handleBulletCollision(bullet, enemy);
-                clearInterval(bulletInterval);
-                return;
-            }
-        }
-        handleUFOCollision(bullet);
-        if (bullet.y < 0) {
-            app.stage.removeChild(bullet);
-            clearInterval(bulletInterval);
-        }
-    }, 10);
+        }, 10);
+        
+    }
 }
 
+function playShootSound(url: string) {
+    let shootSound = new Audio(url)
+    shootSound.play()
+}
+
+function playExplosionSound(url: string) {
+    let explosionSound = new Audio(url)
+    explosionSound.play()
+}
+
+function playUfoHighSound(url: string) {
+    let ufoSound = new Audio(url)
+    ufoSound.play()
+}
+
+function playUfoLowSound(url: string) {
+    let ufoSound = new Audio(url)
+    ufoSound.play()
+}
+
+function playInvaderKilledSound() {
+    let invaderKilledSound = new Audio(invaderKilledSoundUrl)
+    invaderKilledSound.play()
+}
+
+function playFastInvaderSound() {
+    let fastInvaderSound = new Audio(fastInvaderSoundUrl)
+    fastInvaderSound.play()
+}
+
+let shootSoundUrl = 'src/sounds/shoot.wav'
+let explosionSoundUrl = 'src/sounds/explosion.wav'
+let invaderKilledSoundUrl = 'src/sounds/invaderkilled.wav'
+let ufoHighPitchSoundUrl = 'src/sounds/ufo_highpitch.wav'
+let ufoLowPitchSoundUrl = 'src/sounds/ufo_lowpitch.wav'
+let fastInvaderSoundUrl = 'src/sounds/fastinvader1.wav'
 
 
 async function DrawEnemy() {
@@ -202,6 +258,18 @@ DrawEnemy()
 let enemyDirection = 1;
 let enemySpeed = 5;
 const enemyDrop = 20;
+let speed = 500
+let enemyCount = enemies.length;
+
+let intervalId = setInterval(() => {
+    if (isGameActive) {
+        moveEnemies();
+        playFastInvaderSound()
+        for (let enemy of enemies) {
+            changeEnemyTexture(enemy);
+        }
+    }
+}, speed);
 
 function moveEnemies() {
     if (!isGameActive) return;
@@ -214,18 +282,33 @@ function moveEnemies() {
     }
     if (shouldChangeDirection) {
         enemyDirection *= -1;
-        enemySpeed += (10 / 81000) ^ 3 + player.level * 3;
+        speed -= 25
         for (let enemy of enemies) {
             enemy.y += enemyDrop;
         }
     }
+    enemyCount = enemies.length;
+    if (enemyCount <= 10 && speed > 200) {
+        speed -= 50;
+    } else if (enemyCount <= 5 && speed > 150) {
+        speed -= 50;
+    }
+    clearInterval(intervalId);
+    intervalId = setInterval(() => {
+        if (isGameActive) {
+            moveEnemies();
+            playFastInvaderSound()
+            for (let enemy of enemies) {
+                changeEnemyTexture(enemy);
+            }
+        }
+    }, speed);
     
 }
- setInterval(() => {
-    if (isGameActive) {
-        moveEnemies();
-    }
- }, 500);
+
+
+
+
 
  function drawWalls() {
     let spaceBetweenWalls = 50;
@@ -236,7 +319,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 130;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 46
         
     }
@@ -248,7 +331,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 130;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 46
     }
     wallSpace += 200
@@ -259,7 +342,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 130;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 46
     }
     spaceBetweenWalls = 50
@@ -270,7 +353,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 151;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 200
     }
     spaceBetweenWalls = 50
@@ -281,7 +364,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 151;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 200
     }
     spaceBetweenWalls = 50
@@ -292,7 +375,7 @@ function moveEnemies() {
         wallSprite.x = spaceBetweenWalls + wallSpace;
         wallSprite.y = app.screen.height - 151;
         app.stage.addChild(wallSprite);
-        walls.push(wallSprite);
+        walls.push({ sprite: wallSprite, hits: 0 });
         spaceBetweenWalls += 200
     }
 }
@@ -321,13 +404,7 @@ async function changeEnemyTexture(enemy: Sprite) {
 
 
 }
-setInterval(() => {
-    if (isGameActive) {
-        for (let enemy of enemies) {
-            changeEnemyTexture(enemy);
-        }
-    }
-}, 500);
+
 
 const enemyBulletTexture = await Assets.load(enemyBulletUrl);
 
@@ -341,7 +418,13 @@ function enemyShoot(enemy: Sprite) {
     const bulletInterval = setInterval(() => {
         bullet.y += 5;
         for (let wall of walls) {
-            if (checkCollision(bullet, wall)) {
+            if (checkCollision(bullet, wall.sprite)) {
+                wall.hits++;
+                if (wall.hits >= 3) {
+                    app.stage.removeChild(wall.sprite);
+                    walls = walls.filter(w => w !== wall);
+                }
+                changeWallsTexture(wall.sprite);
                 app.stage.removeChild(bullet);
                 clearInterval(bulletInterval);
                 return;
@@ -375,6 +458,54 @@ setInterval(() => {
 }, 1000);
 
 
+function changeWallsTexture(wall: Sprite) {
+    const wallObject = walls.find(w => w.sprite === wall)
+    if (wall.texture == wall1) {
+        if(wallObject!.hits === 1) {
+            wall.texture = wall12
+        }
+        if(wallObject!.hits === 2) {
+            wall.texture = wall13
+        }
+        if(wallObject!.hits === 3) {
+            wall.texture = wall14
+        }
+        
+    }
+    if (wall.texture == wall2) {
+        if(wallObject!.hits === 1) {
+            wall.texture = wall22
+        }
+        if(wallObject!.hits === 2) {
+            wall.texture = wall23
+        }
+        if(wallObject!.hits === 3) {
+            wall.texture = wall24
+        }
+    }
+    if (wall.texture == wall3) {
+        if(wallObject!.hits === 1) {
+            wall.texture = wall32
+        }
+        if(wallObject!.hits === 2) {
+            wall.texture = wall33
+        }
+        if(wallObject!.hits === 3) {
+            wall.texture = wall34
+        }
+    }
+    if (wall.texture == wall4) {
+        if(wallObject!.hits === 1) {
+            wall.texture = wall42
+        }
+        if(wallObject!.hits === 2) {
+            wall.texture = wall43
+        }
+        if(wallObject!.hits === 3) {
+            wall.texture = wall44
+        }
+    }
+}
 
 function checkCollision(bullet: Sprite, entity: Sprite): boolean {
     const bulletBounds = bullet.getBounds();
@@ -383,21 +514,30 @@ function checkCollision(bullet: Sprite, entity: Sprite): boolean {
            bulletBounds.x + bulletBounds.width > entityBounds.x &&
            bulletBounds.y < entityBounds.y + entityBounds.height &&
            bulletBounds.y + bulletBounds.height > entityBounds.y;
+
 }
 
 function handleBulletCollision(bullet: Sprite, entity: Sprite) {
     app.stage.removeChild(bullet);
-    if(entity !== playerTexture) app.stage.removeChild(entity);
+    if(entity !== playerTexture) {
+        playInvaderKilledSound()
+        app.stage.removeChild(entity)
+    };
     const entityIndex = enemies.indexOf(entity);
     if (entityIndex > -1) {
         enemies.splice(entityIndex, 1);
         player.score += 10
     }
     if (entity === playerTexture) {
+        playExplosionSound(explosionSoundUrl)
         blinkPlayer();
         player.lives -= 1;
         updateLivesDisplay();
         if (player.lives <= 0) {
+            setTimeout(() => {
+                entity.visible = false;
+            }, 500)
+            
             displayEndScreen("GAME OVER");
             return;
         }
@@ -437,18 +577,19 @@ async function startNewLevel() {
 }
 
 function restartGame() {
+    playerTexture.visible = true
     player.lives = 3;
     player.level = -1;
     player.score = 0;
     enemySpeed = 5
     updateLivesDisplay();
-    
     playerTexture.x = app.screen.width / 2;
     playerTexture.y = app.screen.height - 50;
     for (let enemy of enemies) {
         app.stage.removeChild(enemy);
     }
     enemies.length = 0;
+    walls = [];
     app.stage.removeChildren();
     app.stage.addChild(playerTexture);
     app.stage.addChild(livesText);
