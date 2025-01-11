@@ -152,6 +152,13 @@ async function shoot() {
 
     const bulletInterval = setInterval(() => {
         bullet.y -= 5;
+        for (let wall of walls) {
+            if (checkCollision(bullet, wall)) {
+                app.stage.removeChild(bullet);
+                clearInterval(bulletInterval);
+                return;
+            }
+        }
         for (let enemy of enemies) {
             if (checkCollision(bullet, enemy)) {
                 handleBulletCollision(bullet, enemy);
@@ -333,6 +340,13 @@ function enemyShoot(enemy: Sprite) {
 
     const bulletInterval = setInterval(() => {
         bullet.y += 5;
+        for (let wall of walls) {
+            if (checkCollision(bullet, wall)) {
+                app.stage.removeChild(bullet);
+                clearInterval(bulletInterval);
+                return;
+            }
+        }
         if (checkCollision(bullet, playerTexture)) {
             handleBulletCollision(bullet, playerTexture);
             clearInterval(bulletInterval);
@@ -359,6 +373,8 @@ setInterval(() => {
         randomEnemyShoot();
     }
 }, 1000);
+
+
 
 function checkCollision(bullet: Sprite, entity: Sprite): boolean {
     const bulletBounds = bullet.getBounds();
