@@ -11,6 +11,8 @@ import playerBulletUrl from './sprites/playerBullet.png'
 import enemyBulletUrl from './sprites/enemyBullet.png'
 import playerHitUrl from './sprites/playerBoom.png';
 import wallSprite11Url from './sprites/wallSprite1-1.png'
+import alienSpriteUrl from './sprites/alienSprite.png'
+import alienBoomUrl from './sprites/alienBoom.png'
 
 
 let enemyAssets = [enemy11Url, enemy21Url, enemy31Url];
@@ -115,6 +117,7 @@ async function shoot() {
                 return;
             }
         }
+        handleUFOCollision(bullet);
         if (bullet.y < 0) {
             app.stage.removeChild(bullet);
             clearInterval(bulletInterval);
@@ -150,34 +153,6 @@ DrawEnemy()
 let enemyDirection = 1;
 const enemySpeed = 0.1;
 const enemyDrop = 20;
-let enemy11Sprite = new Sprite(await Assets.load(enemy11Url));
-let enemy12Sprite = new Sprite(await Assets.load(enemy11Url));
-let enemy21Sprite = new Sprite(await Assets.load(enemy21Url));
-let enemy22Sprite = new Sprite(await Assets.load(enemy22Url));
-let enemy31Sprite = new Sprite(await Assets.load(enemy31Url));
-let enemy32Sprite = new Sprite(await Assets.load(enemy32Url));
-
-
-
-function changeEnemySprites(enemy: Sprite) {
-    if (enemy == enemy11Sprite) {
-        enemy = enemy12Sprite;
-    } else if (enemy == enemy12Sprite) {
-        enemy = enemy11Sprite;
-    } else if (enemy == enemy21Sprite) {
-        enemy = enemy22Sprite;
-    } else if (enemy == enemy22Sprite) {
-        enemy = enemy21Sprite;
-    } else if (enemy == enemy31Sprite) {
-        enemy = enemy32Sprite;
-    } else if (enemy == enemy32Sprite) {
-        enemy = enemy31Sprite;
-    }
-}
-
-for (let enemy of enemies) {
-    changeEnemySprites(enemy);
-}
 
 function moveEnemies() {
     if (!isGameActive) return;
@@ -343,3 +318,57 @@ function displayEndScreen(message: string) {
     });
     app.stage.addChild(restartText);
 }
+
+let ufo: Sprite | null = null;
+const ufoSpeed = 2;
+let isUfoMoving = true;
+
+async function drawUFO() {
+    const ufoTexture = await Assets.load(alienSpriteUrl);
+    ufo = new Sprite(ufoTexture);
+    ufo.anchor.set(0.5);
+    ufo.x = app.screen.width + ufo.width / 2;
+    ufo.y = 50;
+    app.stage.addChild(ufo);
+    isUfoMoving = true;
+}
+function moveUFO() {
+    if (!ufo || !isUfoMoving) return;
+    ufo.x -= ufoSpeed;
+    if (ufo.x < -ufo.width / 2) {
+        app.stage.removeChild(ufo);
+        ufo = null;
+    }
+}
+function handleUFOCollision(bullet: Sprite) {
+    if (!ufo) return;
+    const ufoBounds = ufo.getBounds();
+    const bulletBounds = bullet.getBounds();
+    if (
+        bulletBounds.x < ufoBounds.x + ufoBounds.width &&
+        bulletBounds.x + bulletBounds.width > ufoBounds.x &&
+        bulletBounds.y < ufoBounds.y + ufoBounds.height &&
+        bulletBounds.y + bulletBounds.height > ufoBounds.y
+    ) {
+        isUfoMoving = false;
+        Assets.load(alienBoomUrl).then((explosionTexture) => {
+            ufo!.texture = explosionTexture;
+            setTimeout(() => {
+                app.stage.removeChild(ufo!);
+                ufo = null;
+            }, 200);
+        });
+        app.stage.removeChild(bullet);
+    }
+}
+setInterval(() => {
+    if (isGameActive && !ufo) {
+        drawUFO();
+    }
+}, 10000);
+app.ticker.add(() => {
+    if (isGameActive) {
+        moveEnemies();
+        moveUFO();
+    }
+});
