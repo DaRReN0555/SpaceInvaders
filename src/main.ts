@@ -196,31 +196,37 @@ async function shoot() {
 
 function playShootSound(url: string) {
     let shootSound = new Audio(url)
+    shootSound.volume = 0.3
     shootSound.play()
 }
 
 function playExplosionSound(url: string) {
     let explosionSound = new Audio(url)
+    explosionSound.volume = 0.3
     explosionSound.play()
 }
 
 function playUfoHighSound(url: string) {
     let ufoSound = new Audio(url)
+    ufoSound.volume = 0.3
     ufoSound.play()
 }
 
 function playUfoLowSound(url: string) {
     let ufoSound = new Audio(url)
+    ufoSound.volume = 0.3
     ufoSound.play()
 }
 
 function playInvaderKilledSound() {
     let invaderKilledSound = new Audio(invaderKilledSoundUrl)
+    invaderKilledSound.volume = 0.3
     invaderKilledSound.play()
 }
 
 function playFastInvaderSound() {
     let fastInvaderSound = new Audio(fastInvaderSoundUrl)
+    fastInvaderSound.volume = 0.5
     fastInvaderSound.play()
 }
 
@@ -637,6 +643,7 @@ const ufoSpeed = 2;
 let isUfoMoving = true;
 
 async function drawUFO() {
+    playUfoLowSound(ufoLowPitchSoundUrl)
     const ufoTexture = await Assets.load(alienSpriteUrl);
     ufo = new Sprite(ufoTexture);
     ufo.anchor.set(0.5);
@@ -649,6 +656,7 @@ function moveUFO() {
     if (!ufo || !isUfoMoving) return;
     ufo.x -= ufoSpeed;
     if (ufo.x < -ufo.width / 2) {
+        playUfoHighSound(ufoHighPitchSoundUrl)
         app.stage.removeChild(ufo);
         ufo = null;
     }
@@ -669,6 +677,7 @@ function handleUFOCollision(bullet: Sprite) {
             setTimeout(() => {
                 app.stage.removeChild(ufo!);
                 ufo = null;
+                player.score += 100;
             }, 200);
         });
     }
